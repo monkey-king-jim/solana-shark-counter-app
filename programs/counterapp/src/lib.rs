@@ -6,28 +6,28 @@ declare_id!("3f9RGuXLK1qeUgoCcwmMxzoKJBP54Qn75HF3LcCFuaCy");
 pub mod counterapp {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, data: u32) -> Result<()> {
-        let my_account = &mut ctx.accounts.my_account;
-        my_account.data = data;
+    pub fn initialize(ctx: Context<Initialize>, count: u32) -> Result<()> {
+        let counter_account = &mut ctx.accounts.counter_account;
+        counter_account.count = count;
         Ok(())
     }
 
-    pub fn update(ctx: Context<Update>, data: u32) -> Result<()> {
-        let my_account = &mut ctx.accounts.my_account;
-        my_account.data = data;
+    pub fn update(ctx: Context<Update>, count: u32) -> Result<()> {
+        let counter_account = &mut ctx.accounts.counter_account;
+        counter_account.count = count;
         Ok(())
     }
 
     pub fn increment(ctx: Context<Increment>) -> Result<()> {
-    let my_account = &mut ctx.accounts.my_account;
-    my_account.data += 1;
+    let counter_account = &mut ctx.accounts.counter_account;
+    counter_account.count += 1;
     Ok(())
     }
 
     pub fn decrement(ctx: Context<Decrement>) -> Result<()> {
-    let my_account = &mut ctx.accounts.my_account;
-    if my_account.data > 0 {
-        my_account.data -= 1;
+    let counter_account = &mut ctx.accounts.counter_account;
+    if counter_account.count > 0 {
+        counter_account.count -= 1;
     }
     Ok(())
     }
@@ -36,7 +36,7 @@ pub mod counterapp {
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(init, payer = user, space = 8 + 4)]
-    pub my_account: Account<'info, MyAccount>,
+    pub counter_account: Account<'info, CounterAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -45,22 +45,22 @@ pub struct Initialize<'info> {
 #[derive(Accounts)]
 pub struct Update<'info> {
     #[account(mut)]
-    pub my_account: Account<'info, MyAccount>,
+    pub counter_account: Account<'info, CounterAccount>,
 }
 
 #[derive(Accounts)]
 pub struct Increment<'info> {
     #[account(mut)]
-    pub my_account: Account<'info, MyAccount>,
+    pub counter_account: Account<'info, CounterAccount>,
 }
 
 #[derive(Accounts)]
 pub struct Decrement<'info> {
     #[account(mut)]
-    pub my_account: Account<'info, MyAccount>,
+    pub counter_account: Account<'info, CounterAccount>,
 }
 
 #[account]
-pub struct MyAccount {
-    pub data: u32,
+pub struct CounterAccount {
+    pub count: u32,
 }
