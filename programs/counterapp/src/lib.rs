@@ -1,14 +1,17 @@
 use anchor_lang::prelude::*;
 
-declare_id!("3f9RGuXLK1qeUgoCcwmMxzoKJBP54Qn75HF3LcCFuaCy");
+declare_id!("8UCFsbJjuTzUimm4g9TuVooR3dKEC7MNV8wyqZp8TEKH");
 
+
+//Data logics
 #[program]
 pub mod counterapp {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, count: u32) -> Result<()> {
+    pub fn create_counter(ctx: Context<CreateCounter>) -> Result<()> {
         let counter_account = &mut ctx.accounts.counter_account;
-        counter_account.count = count;
+        counter_account.authority = ctx.accounts.user.key();
+        counter_account.count = 0;
         Ok(())
     }
 
@@ -20,7 +23,7 @@ pub mod counterapp {
 
     pub fn increment(ctx: Context<Increment>) -> Result<()> {
     let counter_account = &mut ctx.accounts.counter_account;
-    counter_account.count += 1;
+    counter_account.count = counter_account.count.checked_add(1).unwrap();
     Ok(())
     }
 
@@ -33,9 +36,18 @@ pub mod counterapp {
     }
 }
 
+// data validators
+
 #[derive(Accounts)]
-pub struct Initialize<'info> {
-    #[account(init, payer = user, space = 8 + 4)]
+pub struct CreateCounter<'info> {
+    // space: 32 public key + 8 discrimator + 4 count size + 1 bump
+    #[account(
+        init, 
+        payer = user, 
+        space = 32 + 8 + 4 + 1, 
+        seeds = [b"counter_account", user.key().as_ref()], 
+        bump
+    )]
     pub counter_account: Account<'info, CounterAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
@@ -60,7 +72,10 @@ pub struct Decrement<'info> {
     pub counter_account: Account<'info, CounterAccount>,
 }
 
+
+// data structures
 #[account]
 pub struct CounterAccount {
+    authority: Pubkey,
     pub count: u32,
 }

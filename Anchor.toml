@@ -1,13 +1,13 @@
 [features]
 seeds = false
-[programs.localnet]
-counterapp = "3f9RGuXLK1qeUgoCcwmMxzoKJBP54Qn75HF3LcCFuaCy"
+[programs.devnet]
+counterapp = "8UCFsbJjuTzUimm4g9TuVooR3dKEC7MNV8wyqZp8TEKH"
 
 [registry]
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/Users/jamesw/.config/solana/id.json"
 
 [scripts]
