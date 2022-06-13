@@ -46,4 +46,79 @@ describe("counterapp", () => {
     console.log("Your counter", counter);
     assert.equal(counter.authority.toBase58(), wallet.publicKey.toBase58());
   });
+
+  it("Update a counter!", async () => {
+    // Keypair = account
+    const [counterPubkey, _] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode("counter_account"),
+        wallet.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+    console.log("Your counter address", counterPubkey.toString());
+    const counter = await program.account.counterAccount.fetch(counterPubkey);
+    console.log("Your counter", counter);
+    const tx = await program.methods
+      .update(1)
+      .accounts({
+        counterAccount: counterPubkey,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+    const counterUpdated = await program.account.counterAccount.fetch(
+      counterPubkey
+    );
+    console.log("Your counter", counterUpdated);
+  });
+
+  it("Increment a counter!", async () => {
+    // Keypair = account
+    const [counterPubkey, _] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode("counter_account"),
+        wallet.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+    console.log("Your counter address", counterPubkey.toString());
+    const counter = await program.account.counterAccount.fetch(counterPubkey);
+    console.log("Your counter", counter);
+    const tx = await program.methods
+      .increment()
+      .accounts({
+        counterAccount: counterPubkey,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+    const counterIncremented = await program.account.counterAccount.fetch(
+      counterPubkey
+    );
+    console.log("Your counter", counterIncremented);
+  });
+
+  it("Decrement a counter!", async () => {
+    // Keypair = account
+    const [counterPubkey, _] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode("counter_account"),
+        wallet.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+    console.log("Your counter address", counterPubkey.toString());
+    const counter = await program.account.counterAccount.fetch(counterPubkey);
+    console.log("Your counter", counter);
+    const tx = await program.methods
+      .decrement()
+      .accounts({
+        counterAccount: counterPubkey,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+    const counterDecremented = await program.account.counterAccount.fetch(
+      counterPubkey
+    );
+    console.log("Your counter", counterDecremented);
+  });
 });
