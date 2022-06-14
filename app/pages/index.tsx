@@ -14,7 +14,6 @@ import { Program, BN } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 import idl_type from "/Users/jamesw/Documents/GitHub/solana-shark-counter-app/target/idl/counterapp.json";
 import { ConfirmOptions } from "@solana/web3.js";
-import { program } from "@project-serum/anchor/dist/cjs/spl/token";
 
 const Home: NextPage = () => {
   const opts = {
@@ -97,12 +96,28 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     (async () => {
-      if (!wallet || !wallet.publicKey) {
+      if (
+        !wallet ||
+        !wallet.publicKey ||
+        !wallet.signAllTransactions ||
+        !wallet.signTransaction
+      ) {
         return;
       }
       await setupCounterProgram();
     })();
   }, [wallet]);
+
+  useEffect(() => {
+    // console.log("state refreshed");
+    (async () => {
+      // @ts-ignore
+      if (!programState._programId) {
+        return;
+      }
+      console.log("program is setup");
+    })();
+  }, [programState]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-2">
