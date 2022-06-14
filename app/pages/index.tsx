@@ -1,86 +1,141 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
+import type { NextPage } from "next";
+import React, { useState, useEffect } from "react";
+import Head from "next/head";
+import {
+  WalletDisconnectButton,
+  WalletMultiButton,
+} from "@solana/wallet-adapter-react-ui";
+import {
+  useAnchorWallet,
+  AnchorWallet,
+  useConnection,
+} from "@solana/wallet-adapter-react";
+import { Program, BN } from "@project-serum/anchor";
+import * as anchor from "@project-serum/anchor";
+import idl_type from "/Users/jamesw/Documents/GitHub/solana-shark-counter-app/target/idl/counterapp.json";
+import { ConfirmOptions } from "@solana/web3.js";
+import { program } from "@project-serum/anchor/dist/cjs/spl/token";
 
 const Home: NextPage = () => {
+  const opts = {
+    preflightCommitment: "processed" as ConfirmOptions,
+  };
+  const connection = useConnection();
+  const wallet: AnchorWallet | any = useAnchorWallet();
+
+  const [programState, setProgramState] = useState({} as any);
+
+  const increment = async () => {
+    const tx = await programState.program.methods
+      .increment()
+      .accounts({
+        counterAccount: programState.counter,
+      })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  };
+
+  const setupCounterProgram = async () => {
+    let idl = idl_type as anchor.Idl;
+
+    const network = "https://api.devnet.solana.com ";
+    const connection = new anchor.web3.Connection(
+      network,
+      opts.preflightCommitment
+    );
+
+    const provider = new anchor.AnchorProvider(
+      connection,
+      wallet,
+      opts.preflightCommitment
+    );
+
+    const program = new Program(
+      idl,
+      "8UCFsbJjuTzUimm4g9TuVooR3dKEC7MNV8wyqZp8TEKH",
+      provider
+    );
+
+    const [counterPubkey, _] = await anchor.web3.PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode("counter_account"),
+        wallet.publicKey.toBytes(),
+      ],
+      program.programId
+    );
+    console.log("Your counter address", counterPubkey.toString());
+    const counter: any = await program.account.counterAccount.fetch(
+      counterPubkey
+    );
+    console.log("Your counter", counter);
+    // const systemProgram = anchor.web3.SystemProgram;
+    // const [counter, _counterBump] =
+    //   await anchor.web3.PublicKey.findProgramAddress(
+    //     [
+    //       anchor.utils.bytes.utf8.encode("counter_account"),
+    //       wallet.publicKey.toBytes(),
+    //     ],
+    //     program.programId
+    //   );
+    // console.log("Your counter address", counter.toString());
+    // const tx = await program.methods
+    //   .createCounter()
+    //   .accounts({
+    //     user: wallet.publicKey,
+    //     counterAccount: counter,
+    //     systemProgram: systemProgram.programId,
+    //   })
+    //   .rpc();
+    // console.log("Your transaction signature", tx);
+
+    setProgramState({
+      program: program,
+      counter: counterPubkey,
+      count: counter.count.toString(),
+    });
+  };
+
+  useEffect(() => {
+    (async () => {
+      if (!wallet || !wallet.publicKey) {
+        return;
+      }
+      await setupCounterProgram();
+    })();
+  }, [wallet]);
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-2">
       <Head>
-        <title>Create Next App</title>
+        <title>MLH Counter App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
-
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="rounded-md bg-gray-100 p-3 font-mono text-lg">
-            pages/index.tsx
-          </code>
-        </p>
-
-        <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and its API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+      <main>
+        <div className="mockup-window border bg-base-300">
+          <div className="flex justify-center px-4 py-16 bg-base-200">
+            <WalletMultiButton />
+            <WalletDisconnectButton />
+          </div>
+          <div className="flex justify-center px-4 py-16 bg-base-200">
+            {programState.counter && (
+              <div>
+                <p>Count: {programState.count}</p>
+                <button
+                  onClick={async () => {
+                    await increment();
+                    await setupCounterProgram();
+                  }}
+                >
+                  Increment
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </main>
-
-      <footer className="flex h-24 w-full items-center justify-center border-t">
-        <a
-          className="flex items-center justify-center gap-2"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-        </a>
-      </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
