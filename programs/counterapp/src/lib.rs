@@ -1,4 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::account_info::AccountInfo;
+
+use anchor_spl::token::{self, Token, Mint, TokenAccount, Transfer};
 
 declare_id!("8UCFsbJjuTzUimm4g9TuVooR3dKEC7MNV8wyqZp8TEKH");
 
@@ -34,6 +37,23 @@ pub mod counterapp {
     }
     Ok(())
     }
+
+    pub fn transfer_token(ctx: Context<TransferWrapper>) -> Result<()> {
+        let transfer_ix = Transfer{
+            from: ctx.accounts.sender_token.to_account_info(),
+            to: ctx.accounts.receiver_token.to_account_info(),
+            authority: ctx.accounts.sender.to_account_info(),
+        };
+
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+
+        let cpi_ctx = CpiContext::new(cpi_program, transfer_ix);
+
+        anchor_spl::token::transfer(cpi_ctx, 1)?;
+
+        Ok(())
+    }
+
 }
 
 // data validators
@@ -71,6 +91,18 @@ pub struct Decrement<'info> {
     #[account(mut)]
     pub counter_account: Account<'info, CounterAccount>,
 }
+
+// cpi transfer
+#[derive(Accounts)]
+pub struct TransferWrapper<'info> {
+    pub sender: Signer<'info>,
+    #[account(mut)]
+    pub sender_token: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub receiver_token: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
 
 
 // data structures

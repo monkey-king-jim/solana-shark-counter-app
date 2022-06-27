@@ -35,8 +35,6 @@ describe("counterapp", () => {
   const program = anchor.workspace.Counterapp as Program<Counterapp>;
 
   let mint;
-  let sender;
-  let sender_token;
   let receiver;
   let receiver_token;
   let payer;
@@ -152,23 +150,24 @@ describe("counterapp", () => {
   // });
 
   it("setup mints and token accounts", async () => {
+    // set up mint
     mint = Keypair.generate();
-    console.log(`mint: ${mint.publicKey.toBase58()}`);
     const connection = provider.connection;
-
     payer = web3.Keypair.generate();
+
+    // airdrop some lamports to payer
     const airdropSignature = await connection.requestAirdrop(
       payer.publicKey,
       web3.LAMPORTS_PER_SOL // 10000000 Lamports in 1 SOL
     );
     const latestBlockHash = await connection.getLatestBlockhash();
-
     await connection.confirmTransaction({
       blockhash: latestBlockHash.blockhash,
       lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
       signature: airdropSignature,
     });
 
+    // create mint
     let mintPubkey = await createMint(
       connection, // conneciton
       payer, // fee payer
@@ -177,34 +176,25 @@ describe("counterapp", () => {
       6 // decimals
     );
 
-    let mintAccount = await getMint(connection, mintPubkey);
-
-    console.log(mintAccount);
-    sender = Keypair.generate();
+    // let mintAccount = await getMint(connection, mintPubkey);
+    // console.log(mintAccount);
     receiver = Keypair.generate();
 
-    let sender_token = await createAssociatedTokenAccount(
-      connection, // connection
-      payer, // fee payer
-      mintPubkey, // mint
-      sender.publicKey // owner,
-    );
-    console.log(`ATA: ${sender_token.toBase58()}`);
-
-    let senderTokenAccount = await getAccount(connection, sender_token);
-    console.log(senderTokenAccount);
-
-    let receiver_token = await createAssociatedTokenAccount(
+    // create ATAs for sender and receiver
+    receiver_token = await createAssociatedTokenAccount(
       connection, // connection
       payer, // fee payer
       mintPubkey, // mint
       receiver.publicKey // owner,
     );
-    console.log(`ATA: ${receiver_token.toBase58()}`);
+    // console.log(`ATA: ${receiver_token.toBase58()}`);
 
-    let receiverTokenAccount = await getAccount(connection, receiver_token);
-    console.log(receiverTokenAccount);
-
+    let wallet_token = await createAssociatedTokenAccount(
+      connection, // connection
+      payer, // fee payer
+      mintPubkey, // mint
+      wallet.publicKey // owner,
+    );
     // mint tokens
     // let mint_sender_tx = await mintToChecked(
     //   connection, // connection
@@ -221,20 +211,58 @@ describe("counterapp", () => {
     // let senderTokenAmount = await connection.getTokenAccountBalance(
     //   sender_token
     // );
-    let mint_sender_tx = new Transaction().add(
+
+    // let mint_sender_tx = new Transaction().add(
+    //   createMintToCheckedInstruction(
+    //     mintPubkey, // mint
+    //     sender_token, // receiver (sholud be a token account)
+    //     wallet.publicKey, // mint authority
+    //     2e6, // amount. if your decimals is 8, you mint 10^8 for 1 token.
+    //     6 // decimals
+    //     // [signer1, signer2 ...], // only multisig account will use
+    //   )
+    // );
+    // console.log(`txhash: ${await provider.sendAndConfirm(mint_sender_tx)}`);
+    // let senderTokenAmount = await connection.getTokenAccountBalance(
+    //   sender_token
+    // );
+    // console.log(`sender starting amount: ${senderTokenAmount.value.amount}`);
+
+    // mint 2 tokens to sender ATA (wallet)
+    let mint_wallet_tx = new Transaction().add(
       createMintToCheckedInstruction(
         mintPubkey, // mint
-        sender_token, // receiver (sholud be a token account)
+        wallet_token, // receiver (sholud be a token account)
         wallet.publicKey, // mint authority
         2e6, // amount. if your decimals is 8, you mint 10^8 for 1 token.
         6 // decimals
         // [signer1, signer2 ...], // only multisig account will use
       )
     );
-    console.log(`txhash: ${await provider.sendAndConfirm(mint_sender_tx)}`);
-    let senderTokenAmount = await connection.getTokenAccountBalance(
-      sender_token
+    console.log(`txhash: ${await provider.sendAndConfirm(mint_wallet_tx)}`);
+    let walletTokenAmount = await connection.getTokenAccountBalance(
+      wallet_token
     );
-    console.log(`amount: ${senderTokenAmount.value.amount}`);
+    console.log(`sender starting amount: ${walletTokenAmount.value.amount}`);
+
+    const tx = await program.methods
+      .transferToken()
+      .accounts({
+        sender: wallet.publicKey,
+        senderToken: wallet_token,
+        receiverToken: receiver_token,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+
+    console.log("Your transaction signature", tx);
+    walletTokenAmount = await connection.getTokenAccountBalance(wallet_token);
+    console.log(`sender remaining amount: ${walletTokenAmount.value.amount}`);
+    let receiverTokenAmount = await connection.getTokenAccountBalance(
+      receiver_token
+    );
+    console.log(
+      `receiver remaining amount: ${receiverTokenAmount.value.amount}`
+    );
   });
 });
